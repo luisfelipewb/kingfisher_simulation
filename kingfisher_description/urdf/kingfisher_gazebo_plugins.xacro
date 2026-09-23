@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<!--
+gz-sim plugins for the Kingfisher M200: hull buoyancy (vrx::Surface, one per
+hull), Fossen drag (vrx::SimpleHydrodynamics) and one gz::sim::systems::Thruster
+per jet drive.
+
+Hydrodynamic coefficients come from the system identification used in the
+IsaacLab kingfisher environment (linear / quadratic damping, body frame):
+  surge  0.0   / 17.2576
+  sway   99.99 / 99.99
+  heave  99.99 / 10.0
+  roll   13.0  / 5.0
+  pitch  13.0  / 5.0
+  yaw    5.83  / 17.336
+Thrust limits come from the same source: +19.5 N forward, -4.0 N reverse per
+thruster.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- === Buoyancy / hull geometry (tunable) === -->
+  <!-- Each hull is modelled as a horizontal cylinder; the points are on the keel. -->
+  <xacro:property name="kf_surface_hull_length" value="1.3"/>
+  <xacro:property name="kf_surface_hull_radius" value="0.15"/>
+  <xacro:property name="kf_surface_keel_z" value="-0.22"/>
+  <xacro:property name="kf_surface_hull_y" value="0.38"/>
+  <xacro:property name="kf_surface_point_x" value="0.45"/>
+
+  <!-- === Drag (Fossen), linear (xU...) and quadratic (xUU...) === -->
+  <xacro:property name="kf_xU" value="0.0"/>
+  <xacro:property name="kf_xUU" value="17.2576"/>
+  <xacro:property name="kf_yV" value="99.99"/>
+  <xacro:property name="kf_yVV" value="99.99"/>
+  <xacro:property name="kf_zW" value="99.99"/>
+  <xacro:property name="kf_zWW" value="10.0"/>
+  <xacro:property name="kf_kP" value="13.0"/>
+  <xacro:property name="kf_kPP" value="5.0"/>
+  <xacro:property name="kf_mQ" value="13.0"/>
+  <xacro:property name="kf_mQQ" value="5.0"/>
+  <xacro:property name="kf_nR" value="5.83"/>
+  <xacro:property name="kf_nRR" value="17.336"/>
+
+  <!-- === Thruster === -->
+  <xacro:property name="kf_max_thrust" value="19.5"/>
+  <xacro:property name="kf_min_thrust" value="-4.0"/>
+  <!-- Only affect the propeller spin rate shown in sim, not the applied force -->
+  <xacro:property name="kf_thrust_coefficient" value="0.005"/>
+  <xacro:property name="kf_propeller_diameter" value="0.10"/>
+
+  <xacro:macro name="kingfisher_dynamics_gazebo">
+    <gazebo>
+      <!-- Left hull -->
+      <plugin filename="libSurface.so" name="vrx::Surface">
+        <link_name>base_link</link_name>
+        <hull_length>${kf_surface_hull_length}</hull_length>
+        <hull_radius>${kf_surface_hull_radius}</hull_radius>
+        <fluid_level>0</fluid_level>
+        <points>
+          <point>${kf_surface_point_x} ${kf_surface_hull_y} ${kf_surface_keel_z}</point>
+          <point>${-kf_surface_point_x} ${kf_surface_hull_y} ${kf_surface_keel_z}</point>
+        </points>
+        <wavefield>
+          <topic>/vrx/wavefield/parameters</topic>
+        </wavefield>
+      </plugin>
+
+      <!-- Right hull -->
+      <plugin filename="libSurface.so" name="vrx::Surface">
+        <link_name>base_link</link_name>
+        <hull_length>${kf_surface_hull_length}</hull_length>
+        <hull_radius>${kf_surface_hull_radius}</hull_radius>
+        <fluid_level>0</fluid_level>
+        <points>
+          <point>${kf_surface_point_x} ${-kf_surface_hull_y} ${kf_surface_keel_z}</point>
+          <point>${-kf_surface_point_x} ${-kf_surface_hull_y} ${kf_surface_keel_z}</point>
+        </points>
+        <wavefield>
+          <topic>/vrx/wavefield/parameters</topic>
+        </wavefield>
+      </plugin>
+
+      <plugin filename="libSimpleHydrodynamics.so" name="vrx::SimpleHydrodynamics">
+        <link_name>base_link</link_name>
+        <!-- Added mass -->
+        <xDotU>0.0</xDotU>
+        <yDotV>0.0</yDotV>
+        <nDotR>0.0</nDotR>
+        <!-- Linear and quadratic drag -->
+        <xU>${kf_xU}</xU>
+        <xUU>${kf_xUU}</xUU>
+        <yV>${kf_yV}</yV>
+        <yVV>${kf_yVV}</yVV>
+        <zW>${kf_zW}</zW>
+        <zWW>${kf_zWW}</zWW>
+        <kP>${kf_kP}</kP>
+        <kPP>${kf_kPP}</kPP>
+        <mQ>${kf_mQ}</mQ>
+        <mQQ>${kf_mQQ}</mQQ>
+        <nR>${kf_nR}</nR>
+        <nRR>${kf_nRR}</nRR>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="kingfisher_thruster_plugin" params="name">
+    <gazebo>
+      <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
+        <joint_name>${name}_engine_propeller_joint</joint_name>
+        <thrust_coefficient>${kf_thrust_coefficient}</thrust_coefficient>
+        <fluid_density>1000</fluid_density>
+        <propeller_diameter>${kf_propeller_diameter}</propeller_diameter>
+        <velocity_control>true</velocity_control>
+        <max_thrust_cmd>${kf_max_thrust}</max_thrust_cmd>
+        <min_thrust_cmd>${kf_min_thrust}</min_thrust_cmd>
+        <namespace>${namespace}</namespace>
+        <topic>thrusters/${name}/thrust</topic>
+        <!-- Not used by Gazebo but used by vrx_gz to generate the ROS bridge -->
+        <name>${name}</name>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

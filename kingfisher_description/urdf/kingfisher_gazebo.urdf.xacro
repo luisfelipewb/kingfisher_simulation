@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!--
+Top-level Kingfisher M200 description for VRX / gz-sim.
+
+This is the file vrx_gz processes (xacro -> URDF -> gz sdf -p). vrx_gz always
+passes namespace:=<model_name> locked:=true vrx_sensors_enabled:=true
+thruster_config:=H; the latter two WAM-V-specific args are accepted and ignored
+(fixed differential thrusters, no dock lock).
+
+Frames: link names in the URDF are plain (base_link, imu_link, ...). The TF
+prefix (default "<namespace>/") is applied by robot_state_publisher through
+its frame_prefix parameter, and every Gazebo sensor stamps its messages with
+the same prefixed frame via <gz_frame_id>, so the simulated robot exposes
+exactly the frames of the real one (e.g. kingfisher/base_link). Gazebo's own
+pose publisher is deliberately not used.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="kingfisher">
+  <!-- Args passed by vrx_gz -->
+  <xacro:arg name="namespace" default="kingfisher"/>
+  <xacro:arg name="locked" default="false"/>
+  <xacro:arg name="thruster_config" default="H"/>
+  <!-- TF prefix stamped on sensor data; must match robot_state_publisher's frame_prefix -->
+  <xacro:arg name="tf_prefix" default="$(arg namespace)/"/>
+  <!-- Standard sensor suite: GPS, IMU, 2D lidar, front camera -->
+  <xacro:arg name="vrx_sensors_enabled" default="true"/>
+  <!-- Individual sensors (used when vrx_sensors_enabled is false) -->
+  <xacro:arg name="camera_enabled" default="false"/>
+  <xacro:arg name="gps_enabled" default="false"/>
+  <xacro:arg name="imu_enabled" default="false"/>
+  <xacro:arg name="lidar_enabled" default="false"/>
+  <!-- Ground truth odometry message on sensors/position/ground_truth_odometry (no TF) -->
+  <xacro:arg name="ground_truth_enabled" default="true"/>
+  <!-- Topic sub-namespaces -->
+  <xacro:arg name="thruster_namespace" default="thrusters/"/>
+  <xacro:arg name="sensor_namespace" default="sensors/"/>
+
+  <xacro:property name="namespace" value="$(arg namespace)" scope="global"/>
+  <xacro:property name="tf_prefix" value="$(arg tf_prefix)" scope="global"/>
+  <xacro:property name="thruster_namespace" value="$(arg thruster_namespace)" scope="global"/>
+  <xacro:property name="sensor_namespace" value="$(arg sensor_namespace)" scope="global"/>
+
+  <!-- === Platform === -->
+  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_base.urdf.xacro"/>
+  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_gazebo_plugins.xacro"/>
+  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_sensors.xacro"/>
+  <xacro:include filename="$(find wamv_gazebo)/urdf/components/planar_lidar_2d.xacro"/>
+
+  <!-- === Dynamics and propulsion === -->
+  <xacro:kingfisher_dynamics_gazebo/>
+  <xacro:kingfisher_thruster_plugin name="left"/>
+  <xacro:kingfisher_thruster_plugin name="right"/>
+
+  <!-- === Joint states (propeller spin), bridged to joint_states for robot_state_publisher === -->
+  <gazebo>
+    <plugin
+      filename="gz-sim-joint-state-publisher-system"
+      name="gz::sim::systems::JointStatePublisher">
+    </plugin>
+  </gazebo>
+
+  <!-- === Ground truth === -->
+  <!-- Pose/twist in the Gazebo world frame (which coincides with a map frame
+       whose origin is the world's spherical_coordinates origin). Only the
+       Odometry message is exposed: the transform is sent to an unbridged topic
+       so that a localization stack owns map -> odom -> base_link as on the
+       real robot. -->
+  <xacro:if value="$(arg ground_truth_enabled)">
+    <gazebo>
+      <plugin filename="gz-sim-odometry-publisher-system"
+        name="gz::sim::systems::OdometryPublisher">
+        <dimensions>3</dimensions>
+        <odom_frame>map</odom_frame>
+        <robot_base_frame>${tf_prefix}base_link</robot_base_frame>
+        <odom_publish_frequency>10</odom_publish_frequency>
+        <tf_topic>/model/${namespace}/ground_truth/tf</tf_topic>
+      </plugin>
+    </gazebo>
+  </xacro:if>
+
+  <!-- === Sensors === -->
+  <!-- Deck is at z ~0.05-0.10, bow at x ~0.70 -->
+  <xacro:property name="kf_true" value="${['true', '1']}"/>
+  <xacro:property name="kf_all" value="${'$(arg vrx_sensors_enabled)'.lower() in kf_true}"/>
+  <xacro:property name="kf_lidar" value="${kf_all or '$(arg lidar_enabled)'.lower() in kf_true}"/>
+  <xacro:property name="kf_camera" value="${kf_all or '$(arg camera_enabled)'.lower() in kf_true}"/>
+  <xacro:property name="kf_gps" value="${kf_all or '$(arg gps_enabled)'.lower() in kf_true}"/>
+  <xacro:property name="kf_imu" value="${kf_all or '$(arg imu_enabled)'.lower() in kf_true}"/>
+
+  <xacro:if value="${kf_lidar}">
+    <xacro:planar_lidar_2d name="lidar" x="0.30" y="0" z="0.35"
+                           link_prefix="" frame_id="${tf_prefix}lidar_link"/>
+  </xacro:if>
+  <xacro:if value="${kf_camera}">
+    <xacro:kingfisher_camera name="camera" x="0.55" y="0" z="0.25" P="${radians(10)}"/>
+  </xacro:if>
+  <xacro:if value="${kf_gps}">
+    <xacro:kingfisher_gps name="gps" x="-0.30" y="0" z="0.30"/>
+  </xacro:if>
+  <xacro:if value="${kf_imu}">
+    <xacro:kingfisher_imu name="imu" x="0" y="0" z="0.05"/>
+  </xacro:if>
+</robot>

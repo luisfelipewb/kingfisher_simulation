@@ -1,14 +1,15 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 project(kingfisher_description)
+find_package(ament_cmake REQUIRED)
 
-find_package(catkin REQUIRED COMPONENTS roslaunch)
+# Hooks: expose share/ on GZ_SIM_RESOURCE_PATH so model://kingfisher_description/... resolves
+ament_environment_hooks("hooks/resource_paths.dsv.in")
+ament_environment_hooks("hooks/resource_paths.sh")
 
-catkin_package()
+install(DIRECTORY meshes/
+  DESTINATION share/${PROJECT_NAME}/meshes)
 
-roslaunch_add_file_check(launch)
+install(DIRECTORY urdf/
+  DESTINATION share/${PROJECT_NAME}/urdf)
 
-install(
-  DIRECTORY launch meshes urdf
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
+ament_package()

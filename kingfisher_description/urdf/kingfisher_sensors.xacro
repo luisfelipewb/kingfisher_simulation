@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<!--
+Sensor macros for the Kingfisher M200.
+
+Every macro creates a plainly named link (<name>_link) on a fixed joint to
+base_link and a Gazebo sensor whose published frame_id is forced with
+<gz_frame_id> to ${tf_prefix}<name>_link, i.e. the same frame the real driver
+would stamp and the same frame robot_state_publisher publishes (frame_prefix).
+Gazebo lumps the fixed-joint links into base_link internally, which does not
+matter: TF comes from the URDF via robot_state_publisher, not from Gazebo.
+
+Requires the global properties tf_prefix and sensor_namespace.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="kingfisher_sensor_link" params="name xyz rpy radius length mass color:='0.2 0.2 0.2 1.0'">
+    <link name="${name}_link">
+      <visual name="${name}_visual">
+        <geometry>
+          <cylinder radius="${radius}" length="${length}"/>
+        </geometry>
+        <material name="${name}_visual_material">
+          <color rgba="${color}"/>
+        </material>
+      </visual>
+      <collision name="${name}_collision">
+        <geometry>
+          <cylinder radius="${radius}" length="${length}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="${mass}"/>
+        <inertia
+          ixx="${(mass/12) * (3*radius*radius + length*length)}"
+          iyy="${(mass/12) * (3*radius*radius + length*length)}"
+          izz="${(mass/2) * radius*radius}"
+          ixy="0" ixz="0" iyz="0"/>
+      </inertial>
+    </link>
+    <joint name="${name}_joint" type="fixed">
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <parent link="base_link"/>
+      <child link="${name}_link"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- GPS receiver: sensor "navsat" -> sensors/gps/gps/fix -->
+  <xacro:macro name="kingfisher_gps" params="name:=gps x:=0 y:=0 z:=0 R:=0 P:=0 Y:=0 update_rate:=20">
+    <xacro:kingfisher_sensor_link name="${name}" xyz="${x} ${y} ${z}" rpy="${R} ${P} ${Y}"
+                                  radius="0.04" length="0.03" mass="0.2"/>
+    <gazebo reference="${name}_link">
+      <sensor name="navsat" type="navsat">
+        <always_on>1</always_on>
+        <update_rate>${update_rate}</update_rate>
+        <gz_frame_id>${tf_prefix}${name}_link</gz_frame_id>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Gaussian noise block of the gz IMU sensor -->
+  <xacro:macro name="kf_imu_noise" params="stddev bias_mean bias_stddev dyn_bias_stddev dyn_bias_time precision">
+    <noise type="gaussian">
+      <mean>0</mean>
+      <stddev>${stddev}</stddev>
+      <bias_mean>${bias_mean}</bias_mean>
+      <bias_stddev>${bias_stddev}</bias_stddev>
+      <dynamic_bias_stddev>${dyn_bias_stddev}</dynamic_bias_stddev>
+      <dynamic_bias_correlation_time>${dyn_bias_time}</dynamic_bias_correlation_time>
+      <precision>${precision}</precision>
+    </noise>
+  </xacro:macro>
+
+  <!-- IMU: sensor "<name>_sensor" -> sensors/imu/imu/data (noise model as the WAM-V's) -->
+  <xacro:macro name="kingfisher_imu" params="name:=imu x:=0 y:=0 z:=0 R:=0 P:=0 Y:=0 update_rate:=100">
+    <xacro:kingfisher_sensor_link name="${name}" xyz="${x} ${y} ${z}" rpy="${R} ${P} ${Y}"
+                                  radius="0.02" length="0.01" mass="0.05"/>
+    <gazebo reference="${name}_link">
+      <sensor type="imu" name="${name}_sensor">
+        <update_rate>${update_rate}</update_rate>
+        <gz_frame_id>${tf_prefix}${name}_link</gz_frame_id>
+        <imu>
+          <angular_velocity>
+            <x><xacro:kf_imu_noise stddev="0.009" bias_mean="0.00075" bias_stddev="0.005" dyn_bias_stddev="0.00002" dyn_bias_time="400.0" precision="0.00025"/></x>
+            <y><xacro:kf_imu_noise stddev="0.009" bias_mean="0.00075" bias_stddev="0.005" dyn_bias_stddev="0.00002" dyn_bias_time="400.0" precision="0.00025"/></y>
+            <z><xacro:kf_imu_noise stddev="0.009" bias_mean="0.00075" bias_stddev="0.005" dyn_bias_stddev="0.00002" dyn_bias_time="400.0" precision="0.00025"/></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><xacro:kf_imu_noise stddev="0.021" bias_mean="0.05" bias_stddev="0.0075" dyn_bias_stddev="0.000375" dyn_bias_time="175.0" precision="0.005"/></x>
+            <y><xacro:kf_imu_noise stddev="0.021" bias_mean="0.05" bias_stddev="0.0075" dyn_bias_stddev="0.000375" dyn_bias_time="175.0" precision="0.005"/></y>
+            <z><xacro:kf_imu_noise stddev="0.021" bias_mean="0.05" bias_stddev="0.0075" dyn_bias_stddev="0.000375" dyn_bias_time="175.0" precision="0.005"/></z>
+          </linear_acceleration>
+          <orientation_reference_frame>
+            <localization>ENU</localization>
+          </orientation_reference_frame>
+        </imu>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Monocular camera: sensor "<name>_sensor" -> sensors/cameras/<name>_sensor/{image_raw,camera_info}.
+       <name>_link is the camera body (x forward, z up), <name>_link_optical the
+       REP 103 optical frame (z forward) that the images are stamped with. -->
+  <xacro:macro name="kingfisher_camera" params="name:=camera x:=0 y:=0 z:=0 R:=0 P:=0 Y:=0
+                                                width:=1280 height:=720 hfov:=1.3962634 update_rate:=30 visualize:=false">
+    <xacro:kingfisher_sensor_link name="${name}" xyz="${x} ${y} ${z}" rpy="${R} ${P} ${Y}"
+                                  radius="0.02" length="0.04" mass="0.1"/>
+    <link name="${name}_link_optical"/>
+    <joint name="${name}_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+      <parent link="${name}_link"/>
+      <child link="${name}_link_optical"/>
+    </joint>
+    <gazebo reference="${name}_link">
+      <sensor type="camera" name="${name}_sensor">
+        <update_rate>${update_rate}</update_rate>
+        <visualize>${visualize}</visualize>
+        <gz_frame_id>${tf_prefix}${name}_link_optical</gz_frame_id>
+        <camera name="${name}_camera">
+          <horizontal_fov>${hfov}</horizontal_fov>
+          <image>
+            <width>${width}</width>
+            <height>${height}</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>400</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+        </camera>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>
