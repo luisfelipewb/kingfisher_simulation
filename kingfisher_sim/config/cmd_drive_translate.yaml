@@ -1,0 +1,16 @@
+# Parameters for the cmd_drive_translate node.
+#
+# force_table maps a normalized thruster command in [-1, 1] (sampled every
+# 0.1 from -1.0 to 1.0, 21 entries) to the thrust force in Newtons applied by
+# the Gazebo Thruster plugin. Values in between are linearly interpolated.
+# The table reproduces the Kingfisher M200 thruster characteristic used in
+# the IsaacLab kingfisher environment: ~0.3 command deadband, saturation at
+# 19.5 N forward from cmd 0.8 and -4 N in reverse.
+/**/cmd_drive_translate:
+  ros__parameters:
+    rate: 50.0              # Hz, publish rate of the thrust topics
+    min_rate: 5.0           # Hz, cmd_drive older than 1/min_rate -> thrust 0
+    max_update_rate: 1.0    # max change of the normalized command per second
+    force_table: [-4.0, -4.0, -4.0, -4.0, -2.0, -1.0,
+                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                  0.5, 1.5, 4.75, 8.25, 16.0, 19.5, 19.5, 19.5]
