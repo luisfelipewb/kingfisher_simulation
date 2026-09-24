@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+Kingfisher M200, Gazebo-free top level (robot_state_publisher). Link names are
+plain; the TF prefix comes from robot_state_publisher's frame_prefix.
+kingfisher_gazebo/urdf/kingfisher_gazebo.urdf.xacro builds the sim on top.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="kingfisher">
+  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_base.urdf.xacro"/>
+  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_sensors.xacro"/>
+
+  <!-- Deck is at z ~0.05-0.10, bow at x ~0.70 -->
+  <xacro:kingfisher_lidar name="lidar" x="0.30" y="0" z="0.35"/>
+  <xacro:kingfisher_camera name="camera" x="0.55" y="0" z="0.25" P="${radians(10)}"/>
+  <xacro:kingfisher_gps name="gps" x="-0.30" y="0" z="0.30"/>
+  <xacro:kingfisher_imu name="imu" x="0" y="0" z="0.05"/>
+</robot>

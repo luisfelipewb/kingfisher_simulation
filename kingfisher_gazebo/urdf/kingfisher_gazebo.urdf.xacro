@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!--
-Top-level Kingfisher M200 description for VRX / gz-sim.
+Top-level Kingfisher M200 for VRX / gz-sim: kingfisher_description's
+kingfisher.urdf.xacro plus the Gazebo plugins and sensors.
 
 This is the file vrx_gz processes (xacro -> URDF -> gz sdf -p). vrx_gz always
 passes namespace:=<model_name> locked:=true vrx_sensors_enabled:=true
@@ -23,7 +24,8 @@ pose publisher is deliberately not used.
   <xacro:arg name="tf_prefix" default="$(arg namespace)/"/>
   <!-- Standard sensor suite: GPS, IMU, 2D lidar, front camera -->
   <xacro:arg name="vrx_sensors_enabled" default="true"/>
-  <!-- Individual sensors (used when vrx_sensors_enabled is false) -->
+  <!-- Individual sensors (used when vrx_sensors_enabled is false). The links
+       always exist; these only toggle the Gazebo sensor. -->
   <xacro:arg name="camera_enabled" default="false"/>
   <xacro:arg name="gps_enabled" default="false"/>
   <xacro:arg name="imu_enabled" default="false"/>
@@ -40,10 +42,9 @@ pose publisher is deliberately not used.
   <xacro:property name="sensor_namespace" value="$(arg sensor_namespace)" scope="global"/>
 
   <!-- === Platform === -->
-  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_base.urdf.xacro"/>
-  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_gazebo_plugins.xacro"/>
-  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher_sensors.xacro"/>
-  <xacro:include filename="$(find wamv_gazebo)/urdf/components/planar_lidar_2d.xacro"/>
+  <xacro:include filename="$(find kingfisher_description)/urdf/kingfisher.urdf.xacro"/>
+  <xacro:include filename="$(find kingfisher_gazebo)/urdf/kingfisher_gazebo_plugins.xacro"/>
+  <xacro:include filename="$(find kingfisher_gazebo)/urdf/kingfisher_sensors_gazebo.xacro"/>
 
   <!-- === Dynamics and propulsion === -->
   <xacro:kingfisher_dynamics_gazebo/>
@@ -77,8 +78,7 @@ pose publisher is deliberately not used.
     </gazebo>
   </xacro:if>
 
-  <!-- === Sensors === -->
-  <!-- Deck is at z ~0.05-0.10, bow at x ~0.70 -->
+  <!-- === Sensors (links and poses are in kingfisher.urdf.xacro) === -->
   <xacro:property name="kf_true" value="${['true', '1']}"/>
   <xacro:property name="kf_all" value="${'$(arg vrx_sensors_enabled)'.lower() in kf_true}"/>
   <xacro:property name="kf_lidar" value="${kf_all or '$(arg lidar_enabled)'.lower() in kf_true}"/>
@@ -87,16 +87,15 @@ pose publisher is deliberately not used.
   <xacro:property name="kf_imu" value="${kf_all or '$(arg imu_enabled)'.lower() in kf_true}"/>
 
   <xacro:if value="${kf_lidar}">
-    <xacro:planar_lidar_2d name="lidar" x="0.30" y="0" z="0.35"
-                           link_prefix="" frame_id="${tf_prefix}lidar_link"/>
+    <xacro:kingfisher_lidar_gazebo name="lidar"/>
   </xacro:if>
   <xacro:if value="${kf_camera}">
-    <xacro:kingfisher_camera name="camera" x="0.55" y="0" z="0.25" P="${radians(10)}"/>
+    <xacro:kingfisher_camera_gazebo name="camera"/>
   </xacro:if>
   <xacro:if value="${kf_gps}">
-    <xacro:kingfisher_gps name="gps" x="-0.30" y="0" z="0.30"/>
+    <xacro:kingfisher_gps_gazebo name="gps"/>
   </xacro:if>
   <xacro:if value="${kf_imu}">
-    <xacro:kingfisher_imu name="imu" x="0" y="0" z="0.05"/>
+    <xacro:kingfisher_imu_gazebo name="imu"/>
   </xacro:if>
 </robot>

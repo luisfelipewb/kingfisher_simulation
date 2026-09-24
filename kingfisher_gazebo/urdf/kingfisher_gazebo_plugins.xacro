@@ -102,6 +102,10 @@ thruster.
   </xacro:macro>
 
   <xacro:macro name="kingfisher_thruster_plugin" params="name">
+    <!-- Keep the housing as its own link instead of lumping it into base_link -->
+    <gazebo reference="${name}_base_thruster_joint">
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
     <gazebo>
       <plugin filename="gz-sim-thruster-system" name="gz::sim::systems::Thruster">
         <joint_name>${name}_engine_propeller_joint</joint_name>

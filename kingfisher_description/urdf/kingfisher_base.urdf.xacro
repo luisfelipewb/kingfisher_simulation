@@ -30,7 +30,7 @@ Ported from the original ROS 1 description to gz-sim. Link and joint names
 are plain (base_link, left_thruster_link, ...) exactly as on the real robot;
 a TF prefix is added by robot_state_publisher (frame_prefix), never baked into
 the URDF. Hull dynamics are provided by the VRX Surface / SimpleHydrodynamics
-plugins (see kingfisher_gazebo_plugins.xacro).
+plugins (see kingfisher_gazebo).
 
 Frame convention (base_link, x forward, z up): the hull mesh spans
 x -0.64..0.70, y +-0.49, z -0.22..0.10; keel at z = -0.22.

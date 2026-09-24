@@ -3,8 +3,8 @@
   <name>kingfisher_description</name>
   <version>1.0.0</version>
   <description>
-    URDF/xacro description of the Clearpath Kingfisher M200 USV with Gazebo
-    (gz-sim) plugins for use in the VRX simulation environment.
+    URDF/xacro description of the Clearpath Kingfisher M200 ASV. No Gazebo
+    dependencies; the simulation layer is kingfisher_gazebo.
   </description>
   <maintainer email="luisfelipewb@gmail.com">Luis Batista</maintainer>
   <author email="mpurvis@clearpathrobotics.com">Mike Purvis</author>
@@ -12,9 +12,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>xacro</depend>
-  <exec_depend>wamv_gazebo</exec_depend>
-  <exec_depend>vrx_gazebo</exec_depend>
+  <exec_depend>xacro</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -5,7 +5,7 @@ Fixed (non-steerable) jet thruster of the Kingfisher M200.
 Creates a housing link rigidly attached to base_link and a propeller link on a
 continuous joint named ${prefix}_engine_propeller_joint, which is
 the joint driven by gz::sim::systems::Thruster (see
-kingfisher_gazebo_plugins.xacro). The propeller joint name follows the WAM-V
+kingfisher_gazebo). The propeller joint name follows the WAM-V
 convention (<prefix>_engine_propeller_joint) so the VRX bridge generation
 works unchanged.
 -->
@@ -48,10 +48,6 @@ works unchanged.
       <parent link="base_link"/>
       <child link="${prefix}_thruster_link"/>
     </joint>
-    <!-- Keep the housing as its own link instead of lumping it into base_link -->
-    <gazebo reference="${prefix}_base_thruster_joint">
-      <preserveFixedJoint>true</preserveFixedJoint>
-    </gazebo>
 
     <!-- Propeller / impeller, spins about x -->
     <link name="${prefix}_propeller_link">

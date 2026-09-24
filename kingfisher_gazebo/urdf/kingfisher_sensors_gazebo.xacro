@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!--
+Gazebo sensors for the links of kingfisher_description/urdf/kingfisher_sensors.xacro.
+
+Each sensor stamps ${tf_prefix}<link> via <gz_frame_id>, the frame
+robot_state_publisher publishes. Requires the global property tf_prefix.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- GPS: sensor "navsat" -> sensors/gps/gps/fix -->
+  <xacro:macro name="kingfisher_gps_gazebo" params="name:=gps update_rate:=20">
+    <gazebo reference="${name}_link">
+      <sensor name="navsat" type="navsat">
+        <always_on>1</always_on>
+        <update_rate>${update_rate}</update_rate>
+        <gz_frame_id>${tf_prefix}${name}_link</gz_frame_id>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Gaussian noise block of the gz IMU sensor -->
+  <xacro:macro name="kf_imu_noise" params="stddev bias_mean bias_stddev dyn_bias_stddev dyn_bias_time precision">
+    <noise type="gaussian">
+      <mean>0</mean>
+      <stddev>${stddev}</stddev>
+      <bias_mean>${bias_mean}</bias_mean>
+      <bias_stddev>${bias_stddev}</bias_stddev>
+      <dynamic_bias_stddev>${dyn_bias_stddev}</dynamic_bias_stddev>
+      <dynamic_bias_correlation_time>${dyn_bias_time}</dynamic_bias_correlation_time>
+      <precision>${precision}</precision>
+    </noise>
+  </xacro:macro>
+
+  <!-- IMU: sensor "<name>_sensor" -> sensors/imu/imu/data (noise model as the WAM-V's) -->
+  <xacro:macro name="kingfisher_imu_gazebo" params="name:=imu update_rate:=100">
+    <gazebo reference="${name}_link">
+      <sensor type="imu" name="${name}_sensor">
+        <update_rate>${update_rate}</update_rate>
+        <gz_frame_id>${tf_prefix}${name}_link</gz_frame_id>
+        <imu>
+          <angular_velocity>
+            <x><xacro:kf_imu_noise stddev="0.009" bias_mean="0.00075" bias_stddev="0.005" dyn_bias_stddev="0.00002" dyn_bias_time="400.0" precision="0.00025"/></x>
+            <y><xacro:kf_imu_noise stddev="0.009" bias_mean="0.00075" bias_stddev="0.005" dyn_bias_stddev="0.00002" dyn_bias_time="400.0" precision="0.00025"/></y>
+            <z><xacro:kf_imu_noise stddev="0.009" bias_mean="0.00075" bias_stddev="0.005" dyn_bias_stddev="0.00002" dyn_bias_time="400.0" precision="0.00025"/></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><xacro:kf_imu_noise stddev="0.021" bias_mean="0.05" bias_stddev="0.0075" dyn_bias_stddev="0.000375" dyn_bias_time="175.0" precision="0.005"/></x>
+            <y><xacro:kf_imu_noise stddev="0.021" bias_mean="0.05" bias_stddev="0.0075" dyn_bias_stddev="0.000375" dyn_bias_time="175.0" precision="0.005"/></y>
+            <z><xacro:kf_imu_noise stddev="0.021" bias_mean="0.05" bias_stddev="0.0075" dyn_bias_stddev="0.000375" dyn_bias_time="175.0" precision="0.005"/></z>
+          </linear_acceleration>
+          <orientation_reference_frame>
+            <localization>ENU</localization>
+          </orientation_reference_frame>
+        </imu>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Camera: sensor "<name>_sensor" -> sensors/cameras/<name>_sensor/{image_raw,camera_info},
+       stamped with the optical frame -->
+  <xacro:macro name="kingfisher_camera_gazebo" params="name:=camera
+                                                       width:=1280 height:=720 hfov:=1.3962634 update_rate:=30 visualize:=false">
+    <gazebo reference="${name}_link">
+      <sensor type="camera" name="${name}_sensor">
+        <update_rate>${update_rate}</update_rate>
+        <visualize>${visualize}</visualize>
+        <gz_frame_id>${tf_prefix}${name}_link_optical</gz_frame_id>
+        <camera name="${name}_camera">
+          <horizontal_fov>${hfov}</horizontal_fov>
+          <image>
+            <width>${width}</width>
+            <height>${height}</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>400</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+        </camera>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- 2D lidar: sensor "<name>_sensor" -> sensors/lidars/<name>_sensor/{scan,points}.
+       Defaults model a SICK TiM571 (270 deg, 0.33 deg, 25 m, 15 Hz). -->
+  <xacro:macro name="kingfisher_lidar_gazebo" params="name:=lidar
+                                                      samples:=811
+                                                      min_angle:=${-3*pi/4} max_angle:=${3*pi/4}
+                                                      min_range:=0.05 max_range:=25 range_resolution:=0.01
+                                                      update_rate:=15 noise_stddev:=0.01
+                                                      visualize:=false">
+    <gazebo reference="${name}_link">
+      <sensor type="gpu_lidar" name="${name}_sensor">
+        <update_rate>${update_rate}</update_rate>
+        <visualize>${visualize}</visualize>
+        <gz_frame_id>${tf_prefix}${name}_link</gz_frame_id>
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>${samples}</samples>
+              <resolution>1</resolution>
+              <min_angle>${min_angle}</min_angle>
+              <max_angle>${max_angle}</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>${min_range}</min>
+            <max>${max_range}</max>
+            <resolution>${range_resolution}</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>${noise_stddev}</stddev>
+          </noise>
+        </lidar>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>
