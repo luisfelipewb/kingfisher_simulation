@@ -3,7 +3,8 @@
 #   ros2 launch vrx_gz competition.launch.py config_file:=<path>/kingfisher_spawn.yaml
 # Spawning slightly above the water avoids the initial buoyancy bounce.
 - model_name: kingfisher
-  model_type: kingfisher
+  model_type: usv
+  urdf: package://kingfisher_gazebo/urdf/kingfisher_gazebo.urdf.xacro
   position:
     xyz: [-532, 162, 0.12]
     rpy: [0, 0, 1]
