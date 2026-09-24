@@ -1,1 +1,8 @@
-.py[co]
+# Python (kingfisher_sim)
+__pycache__/
+*.py[co]
+*.egg-info/
+.pytest_cache/
+# Editors
+*.swp
+*~
