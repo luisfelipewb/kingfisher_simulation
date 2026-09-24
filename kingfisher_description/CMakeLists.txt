@@ -12,4 +12,7 @@ install(DIRECTORY meshes/
 install(DIRECTORY urdf/
   DESTINATION share/${PROJECT_NAME}/urdf)
 
+install(DIRECTORY launch rviz
+  DESTINATION share/${PROJECT_NAME})
+
 ament_package()
