@@ -4,8 +4,8 @@ Gazebo (gz-sim) / VRX simulation of the Clearpath Kingfisher ASV, ROS 2 Jazzy.
 
 | package | role |
 |---|---|
-| `kingfisher_gazebo` | gz-sim layer: hydrodynamics, thrusters, sensors. `urdf/kingfisher_gazebo.urdf.xacro` is what VRX spawns |
-| `kingfisher_sim` | launch + `cmd_drive_translate` (normalized `cmd_drive` → thrust in N) |
+| `kingfisher_gazebo` | gz-sim layer: hydrodynamics, thrusters, sail, sensors. `urdf/kingfisher_gazebo.urdf.xacro` is what VRX spawns |
+| `kingfisher_sim` | launch, `cmd_drive_translate` (normalized `cmd_drive` → thrust in N) and `sail_jog` (`sail/cmd_rate` → `sail/cmd_angle`) |
 
 Depends on VRX and on `kingfisher_msgs` and `kingfisher_description` from
 [`kingfisher`](https://github.com/luisfelipewb/kingfisher); clone it into the same
@@ -19,8 +19,10 @@ ros2 launch kingfisher_sim kingfisher_sim.launch.py world:=sydney_regatta  # any
 
 That is a world plus `robot.launch.py`, the sim twin of the boat's `kingfisher_bringup`
 `robot.launch.py`: `kingfisher_twist` and `kingfisher_viz` with the boat's config, and
-`cmd_drive_translate` in place of the MCU. It also runs on its own, once per Kingfisher, after
-any world that spawns one (`name:=<model name>`).
+`cmd_drive_translate` in place of the MCU. The sail takes `sail/cmd_angle` (rad) through
+`sail_relay` to its position controller, which turns it at a fixed speed and holds it, and
+`sail/cmd_rate` (rad/s) through `sail_jog`, which turns it while the rate streams in. It also runs
+on its own, once per Kingfisher, after any world that spawns one (`name:=<model name>`).
 
 Spawn configs name it as `model_type: usv` + `urdf: package://kingfisher_gazebo/urdf/kingfisher_gazebo.urdf.xacro`
 (see `kingfisher_sim/config/kingfisher_spawn.yaml`).

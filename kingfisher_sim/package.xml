@@ -12,6 +12,7 @@
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>kingfisher_msgs</depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>kingfisher_gazebo</exec_depend>
@@ -21,6 +22,8 @@
   <exec_depend>kingfisher_bringup</exec_depend>
   <exec_depend>kingfisher_twist</exec_depend>
   <exec_depend>kingfisher_viz</exec_depend>
+  <!-- sail_relay -->
+  <exec_depend>topic_tools</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

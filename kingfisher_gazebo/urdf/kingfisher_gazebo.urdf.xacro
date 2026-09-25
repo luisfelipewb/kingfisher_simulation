@@ -45,6 +45,8 @@ pose publisher is deliberately not used.
   <xacro:kingfisher_dynamics_gazebo/>
   <xacro:kingfisher_thruster_plugin name="left"/>
   <xacro:kingfisher_thruster_plugin name="right"/>
+  <!-- ROS thrusters/sail/pos; robot.launch.py relays sail/cmd_angle to it -->
+  <xacro:kingfisher_sail_plugin/>
 
   <!-- === Joint states (propeller spin), bridged to joint_states for robot_state_publisher === -->
   <gazebo>

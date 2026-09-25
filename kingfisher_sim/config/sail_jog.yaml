@@ -1,0 +1,9 @@
+# Parameters for the sail_jog node: sail/cmd_rate (rad/s) -> sail/cmd_angle.
+/**/sail_jog:
+  ros__parameters:
+    rate: 20.0      # Hz, target updates while jogging
+    # Hz, sail/cmd_rate older than 1/min_rate -> stop. The sail runs on for up
+    # to max_rate/min_rate after the stream stops (a released deadman), and
+    # joy_node streams with gaps of up to 68 ms (kingfisher_teleop).
+    min_rate: 10.0
+    max_rate: 1.0   # rad/s, kf_sail_max_speed in kingfisher_gazebo

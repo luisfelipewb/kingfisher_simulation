@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cmd_drive_translate = kingfisher_sim.cmd_drive_translate:main',
+            'sail_jog = kingfisher_sim.sail_jog:main',
         ],
     },
 )
