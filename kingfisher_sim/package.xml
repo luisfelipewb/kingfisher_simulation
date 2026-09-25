@@ -16,6 +16,11 @@
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>kingfisher_gazebo</exec_depend>
   <exec_depend>vrx_gz</exec_depend>
+  <exec_depend>lac_symphonie</exec_depend>
+  <!-- robot.launch.py: the boat's nodes and config/kingfisher.yaml -->
+  <exec_depend>kingfisher_bringup</exec_depend>
+  <exec_depend>kingfisher_twist</exec_depend>
+  <exec_depend>kingfisher_viz</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

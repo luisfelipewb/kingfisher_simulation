@@ -2,55 +2,76 @@
 #
 # Licensed under the BSD License; see the package.xml for details.
 
-"""Launch the VRX simulation with a Kingfisher and the cmd_drive translator."""
+"""Launch a world with a Kingfisher, plus its robot nodes (robot.launch.py).
+
+world:=lac_symphonie (the default) spawns from the lake's own spawn config, so
+name must match the model there (kingfisher). Any other VRX world spawns one
+Kingfisher called <name>.
+"""
 
 import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch.substitutions import EqualsSubstitution, LaunchConfiguration
 
 
 def generate_launch_description():
     name = LaunchConfiguration('name')
-    sim_pkg = get_package_share_directory('kingfisher_sim')
+    world = LaunchConfiguration('world')
+    is_lake = EqualsSubstitution(world, 'lac_symphonie')
+    gz_args = {
+        'headless': LaunchConfiguration('headless'),
+        'paused': LaunchConfiguration('paused'),
+        'extra_gz_args': LaunchConfiguration('extra_gz_args'),
+    }
 
-    vrx_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(
-            get_package_share_directory('vrx_gz'), 'launch', 'competition.launch.py')),
-        launch_arguments={
-            'model': 'usv',
-            'urdf': os.path.join(get_package_share_directory('kingfisher_gazebo'),
-                                 'urdf', 'kingfisher_gazebo.urdf.xacro'),
-            'name': name,
-            'world': LaunchConfiguration('world'),
-            'headless': LaunchConfiguration('headless'),
-            'paused': LaunchConfiguration('paused'),
-            'extra_gz_args': LaunchConfiguration('extra_gz_args'),
-        }.items())
+    # Each include sits in a GroupAction so its launch arguments stay scoped
+    lake = GroupAction([
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(
+                get_package_share_directory('lac_symphonie'), 'launch',
+                'lac_symphonie.launch.py')),
+            launch_arguments=gz_args.items()),
+    ], condition=IfCondition(is_lake))
 
-    cmd_drive = Node(
-        package='kingfisher_sim',
-        executable='cmd_drive_translate',
-        namespace=name,
-        output='screen',
-        parameters=[os.path.join(sim_pkg, 'config', 'cmd_drive_translate.yaml'),
-                    {'use_sim_time': True}])
+    vrx_world = GroupAction([
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(
+                get_package_share_directory('vrx_gz'), 'launch', 'competition.launch.py')),
+            launch_arguments={
+                'model': 'usv',
+                'urdf': os.path.join(get_package_share_directory('kingfisher_gazebo'),
+                                     'urdf', 'kingfisher_gazebo.urdf.xacro'),
+                'name': name,
+                'world': world,
+                **gz_args,
+            }.items()),
+    ], condition=UnlessCondition(is_lake))
+
+    robot = GroupAction([
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(
+                get_package_share_directory('kingfisher_sim'), 'launch', 'robot.launch.py')),
+            launch_arguments={'name': name}.items()),
+    ])
 
     return LaunchDescription([
         DeclareLaunchArgument('name', default_value='kingfisher',
-                              description='Model name and ROS namespace of the vehicle'),
-        DeclareLaunchArgument('world', default_value='sydney_regatta',
-                              description='Name of the VRX world to load'),
+                              description='Model name and ROS namespace of the vehicle; '
+                                          'with the lake, the model name in its spawn config'),
+        DeclareLaunchArgument('world', default_value='lac_symphonie',
+                              description='lac_symphonie or the name of a VRX world'),
         DeclareLaunchArgument('headless', default_value='False',
                               description='True to run gz sim without the GUI'),
         DeclareLaunchArgument('paused', default_value='False',
                               description='True to start the simulation paused'),
         DeclareLaunchArgument('extra_gz_args', default_value='',
                               description='Additional arguments passed to gz sim'),
-        vrx_launch,
-        cmd_drive,
+        lake,
+        vrx_world,
+        robot,
     ])
