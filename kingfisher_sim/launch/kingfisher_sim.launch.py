@@ -5,8 +5,9 @@
 """Launch a world with a Kingfisher, plus its robot nodes (robot.launch.py).
 
 world:=lac_symphonie (the default) spawns from the lake's own spawn config, so
-name must match the model there (kingfisher). Any other VRX world spawns one
-Kingfisher called <name>.
+name must match the model there (kingfisher), and the wind_* args set its
+wind. Any other VRX world spawns one Kingfisher called <name> and keeps the
+wind in its SDF.
 """
 
 import os
@@ -29,13 +30,19 @@ def generate_launch_description():
         'extra_gz_args': LaunchConfiguration('extra_gz_args'),
     }
 
+    wind_args = {
+        'wind_speed': LaunchConfiguration('wind_speed'),
+        'wind_direction': LaunchConfiguration('wind_direction'),
+        'wind_gust': LaunchConfiguration('wind_gust'),
+    }
+
     # Each include sits in a GroupAction so its launch arguments stay scoped
     lake = GroupAction([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 get_package_share_directory('lac_symphonie'), 'launch',
                 'lac_symphonie.launch.py')),
-            launch_arguments=gz_args.items()),
+            launch_arguments={**gz_args, **wind_args}.items()),
     ], condition=IfCondition(is_lake))
 
     vrx_world = GroupAction([
@@ -71,6 +78,14 @@ def generate_launch_description():
                               description='True to start the simulation paused'),
         DeclareLaunchArgument('extra_gz_args', default_value='',
                               description='Additional arguments passed to gz sim'),
+        DeclareLaunchArgument('wind_speed', default_value='0.0',
+                              description='Lake only: mean wind speed, m/s'),
+        DeclareLaunchArgument('wind_direction', default_value='240',
+                              description='Lake only: where the wind goes, '
+                                          'degrees counter-clockwise from east'),
+        DeclareLaunchArgument('wind_gust', default_value='0.0',
+                              description='Lake only: gust gain, about the standard '
+                                          'deviation of the speed, m/s'),
         lake,
         vrx_world,
         robot,

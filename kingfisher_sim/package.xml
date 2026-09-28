@@ -22,8 +22,11 @@
   <exec_depend>kingfisher_bringup</exec_depend>
   <exec_depend>kingfisher_twist</exec_depend>
   <exec_depend>kingfisher_viz</exec_depend>
-  <!-- sail_relay -->
+  <!-- sail_relay, anemometer_relay -->
   <exec_depend>topic_tools</exec_depend>
+  <!-- wind_bridge -->
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 
