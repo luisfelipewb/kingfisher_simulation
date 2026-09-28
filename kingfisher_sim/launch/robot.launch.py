@@ -8,7 +8,7 @@ kingfisher_twist and kingfisher_viz run with the boat's config;
 cmd_drive_translate stands in for the MCU. The sail takes sail/cmd_angle
 through sail_relay, and sail/cmd_rate through sail_jog. wind_bridge and
 anemometer_relay expose ApparentWind's sail/wrench and sensors/anemometer/wind.
-Start a world that spawns <name> first.
+ground_truth_tf stands in for localization. Start a world that spawns <name> first.
 """
 
 import os
@@ -16,6 +16,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -100,9 +101,23 @@ def generate_launch_description():
                    'geometry_msgs/msg/Vector3Stamped',
                    '{header: m.header, vector: m.twist.linear}', '--wait-for-start'])
 
+    # The gz ground truth as map -> <name>/base_link, until localization publishes map -> odom
+    ground_truth_tf = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='ground_truth_tf',
+        namespace=name,
+        output='screen',
+        parameters=[sim_time],
+        arguments=[['/model/', name, '/ground_truth/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V']],
+        remappings=[(['/model/', name, '/ground_truth/tf'], '/tf')],
+        condition=IfCondition(LaunchConfiguration('ground_truth_tf')))
+
     return LaunchDescription([
         DeclareLaunchArgument('name', default_value='kingfisher',
                               description='Model name and ROS namespace of the vehicle'),
+        DeclareLaunchArgument('ground_truth_tf', default_value='True',
+                              description='Publish the gz ground truth as map -> <name>/base_link'),
         cmd_drive,
         twist,
         viz,
@@ -110,4 +125,5 @@ def generate_launch_description():
         sail_jog,
         wind_bridge,
         anemometer_relay,
+        ground_truth_tf,
     ])

@@ -24,6 +24,10 @@ That is a world plus `robot.launch.py`, the sim twin of the boat's `kingfisher_b
 `sail/cmd_rate` (rad/s) through `sail_jog`, which turns it while the rate streams in. It also runs
 on its own, once per Kingfisher, after any world that spawns one (`name:=<model name>`).
 
+`ground_truth_tf` (default `True`) bridges the gz ground truth to `/tf` as `map → kingfisher/base_link`,
+so the boat shares one tree with the lake's geo frames (`launch_site`, …). It stands in for
+localization: set it to `False` once something publishes `map → odom`.
+
 ## Wind
 
 The true wind is VRX's `USVWind`: uniform, with gusts, on `/vrx/debug/wind/{speed,direction}` (m/s; degrees

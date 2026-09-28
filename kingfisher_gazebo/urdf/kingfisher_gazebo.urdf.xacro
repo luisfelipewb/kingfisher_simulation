@@ -60,10 +60,9 @@ pose publisher is deliberately not used.
 
   <!-- === Ground truth === -->
   <!-- Pose/twist in the Gazebo world frame (which coincides with a map frame
-       whose origin is the world's spherical_coordinates origin). Only the
-       Odometry message is exposed: the transform is sent to an unbridged topic
-       so that a localization stack owns map -> odom -> base_link as on the
-       real robot. -->
+       whose origin is the world's spherical_coordinates origin). The transform
+       goes to its own topic: kingfisher_sim's ground_truth_tf bridges it to /tf
+       until a localization stack owns map -> odom -> base_link. -->
   <xacro:if value="$(arg ground_truth_enabled)">
     <gazebo>
       <plugin filename="gz-sim-odometry-publisher-system"

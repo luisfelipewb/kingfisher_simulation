@@ -63,7 +63,10 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 get_package_share_directory('kingfisher_sim'), 'launch', 'robot.launch.py')),
-            launch_arguments={'name': name}.items()),
+            launch_arguments={
+                'name': name,
+                'ground_truth_tf': LaunchConfiguration('ground_truth_tf'),
+            }.items()),
     ])
 
     return LaunchDescription([
@@ -78,6 +81,8 @@ def generate_launch_description():
                               description='True to start the simulation paused'),
         DeclareLaunchArgument('extra_gz_args', default_value='',
                               description='Additional arguments passed to gz sim'),
+        DeclareLaunchArgument('ground_truth_tf', default_value='True',
+                              description='Publish the gz ground truth as map -> <name>/base_link'),
         DeclareLaunchArgument('wind_speed', default_value='0.0',
                               description='Lake only: mean wind speed, m/s'),
         DeclareLaunchArgument('wind_direction', default_value='240',
