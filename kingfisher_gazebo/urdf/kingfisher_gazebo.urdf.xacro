@@ -45,7 +45,7 @@ pose publisher is deliberately not used.
   <xacro:kingfisher_dynamics_gazebo/>
   <xacro:kingfisher_thruster_plugin name="left"/>
   <xacro:kingfisher_thruster_plugin name="right"/>
-  <!-- ROS thrusters/sail/pos; robot.launch.py relays sail/cmd_angle to it -->
+  <!-- ROS thrusters/sail/pos, from sail_stepper_sim (robot.launch.py) -->
   <xacro:kingfisher_sail_plugin/>
   <!-- Sail aero force and the anemometer, from USVWind's wind -->
   <xacro:kingfisher_wind_plugin/>

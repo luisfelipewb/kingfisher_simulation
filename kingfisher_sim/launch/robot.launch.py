@@ -4,15 +4,17 @@
 
 """The Kingfisher's robot nodes in sim, the twin of kingfisher_bringup's robot.launch.py.
 
-kingfisher_twist and kingfisher_viz run with the boat's config;
-cmd_drive_translate stands in for the MCU. The sail takes sail/cmd_angle
-through sail_relay, and sail/cmd_rate through sail_jog. wind_bridge and
+kingfisher_twist, kingfisher_viz and kingfisher_sail's sail_controller run
+with the boat's config; cmd_drive_translate stands in for the MCU, and
+sail_stepper_sim for the sail's stepper. wind_bridge and
 anemometer_relay expose ApparentWind's sail/wrench and sensors/anemometer/wind.
-ground_truth_tf stands in for localization. Start a world that spawns <name> first.
+ground_truth_tf stands in for localization. joy_teleop runs as on the boat, with
+kingfisher_teleop's config. Start a world that spawns <name> first.
 """
 
 import os
 
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -26,7 +28,11 @@ def generate_launch_description():
     sim_config = os.path.join(get_package_share_directory('kingfisher_sim'), 'config')
     boat_config = os.path.join(
         get_package_share_directory('kingfisher_bringup'), 'config', 'kingfisher.yaml')
+    teleop_config = os.path.join(
+        get_package_share_directory('kingfisher_teleop'), 'config', 'teleop.yaml')
     sim_time = {'use_sim_time': True}
+    with open(boat_config) as f:
+        stepper = yaml.safe_load(f)['/**/phidgets_stepper']['ros__parameters']
 
     cmd_drive = Node(
         package='kingfisher_sim',
@@ -43,7 +49,7 @@ def generate_launch_description():
         output='screen',
         parameters=[boat_config, sim_time])
 
-    # The URDF frames, prefixed; the boat uses static_tfs' until it runs robot_state_publisher
+    # The URDF frames, prefixed, as base.launch.py does on the boat
     viz = Node(
         package='kingfisher_viz',
         executable='kingfisher_viz_node',
@@ -56,24 +62,22 @@ def generate_launch_description():
             'right_thruster_frame': [name, '/right_thruster_link'],
         }])
 
-    # thrusters/sail/pos is sim-internal, like thrusters/*/thrust. The relay
-    # takes its type from the first publisher it sees.
-    sail_relay = Node(
-        package='topic_tools',
-        executable='relay',
-        name='sail_relay',
+    # sail/cmd_position and sail/cmd_velocity -> phidgets_stepper/command, as on the boat
+    sail_controller = Node(
+        package='kingfisher_sail',
+        executable='sail_controller',
         namespace=name,
         output='screen',
-        parameters=[sim_time, {'input_topic': 'sail/cmd_angle',
-                               'output_topic': 'thrusters/sail/pos'}])
+        parameters=[boat_config, sim_time])
 
-    # sail/cmd_rate -> sail/cmd_angle; may be native on the boat's sail controller
-    sail_jog = Node(
+    # The stepper: phidgets_stepper/command -> thrusters/sail/pos, sim-internal
+    # like thrusters/*/thrust. Same acceleration as the boat's driver.
+    sail_stepper = Node(
         package='kingfisher_sim',
-        executable='sail_jog',
+        executable='sail_stepper_sim',
         namespace=name,
         output='screen',
-        parameters=[os.path.join(sim_config, 'sail_jog.yaml'), sim_time])
+        parameters=[sim_time, {'acceleration': float(stepper['acceleration'])}])
 
     # ApparentWind's gz topics are absolute (/<name>/...); vrx_gz only bridges
     # the plugins it knows
@@ -113,17 +117,31 @@ def generate_launch_description():
         remappings=[(['/model/', name, '/ground_truth/tf'], '/tf')],
         condition=IfCondition(LaunchConfiguration('ground_truth_tf')))
 
+    # joy -> cmd_vel, cmd_drive, sail commands; the joystick node
+    # (kingfisher_teleop joy.launch.py) runs separately
+    teleop = Node(
+        package='joy_teleop',
+        executable='joy_teleop',
+        name='joy_teleop',
+        namespace=name,
+        output='screen',
+        parameters=[teleop_config, sim_time],
+        condition=IfCondition(LaunchConfiguration('teleop')))
+
     return LaunchDescription([
         DeclareLaunchArgument('name', default_value='kingfisher',
                               description='Model name and ROS namespace of the vehicle'),
         DeclareLaunchArgument('ground_truth_tf', default_value='True',
                               description='Publish the gz ground truth as map -> <name>/base_link'),
+        DeclareLaunchArgument('teleop', default_value='True',
+                              description='Start joy_teleop; the joystick node runs separately'),
         cmd_drive,
         twist,
         viz,
-        sail_relay,
-        sail_jog,
+        sail_controller,
+        sail_stepper,
         wind_bridge,
         anemometer_relay,
         ground_truth_tf,
+        teleop,
     ])

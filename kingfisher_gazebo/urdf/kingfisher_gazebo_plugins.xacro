@@ -125,11 +125,12 @@ thruster.
   </xacro:macro>
 
   <!-- === Sail === -->
-  <!-- rad/s; placeholder until the real stepper is measured -->
-  <xacro:property name="kf_sail_max_speed" value="1.0"/>
+  <!-- rad/s; only a cap above the stepper's 2.0 (sail_controller max_velocity),
+       so the controller follows sail_stepper_sim's ramped positions -->
+  <xacro:property name="kf_sail_max_speed" value="3.0"/>
 
-  <!-- Velocity mode: turns sail_joint at kf_sail_max_speed to the commanded
-       angle, then holds it rigidly, like a stepper -->
+  <!-- Velocity mode: turns sail_joint at up to kf_sail_max_speed to the
+       commanded angle, then holds it rigidly, like a stepper -->
   <xacro:macro name="kingfisher_sail_plugin">
     <gazebo>
       <plugin filename="gz-sim-joint-position-controller-system"

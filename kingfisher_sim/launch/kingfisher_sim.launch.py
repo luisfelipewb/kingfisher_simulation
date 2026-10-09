@@ -66,6 +66,7 @@ def generate_launch_description():
             launch_arguments={
                 'name': name,
                 'ground_truth_tf': LaunchConfiguration('ground_truth_tf'),
+                'teleop': LaunchConfiguration('teleop'),
             }.items()),
     ])
 
@@ -83,6 +84,8 @@ def generate_launch_description():
                               description='Additional arguments passed to gz sim'),
         DeclareLaunchArgument('ground_truth_tf', default_value='True',
                               description='Publish the gz ground truth as map -> <name>/base_link'),
+        DeclareLaunchArgument('teleop', default_value='True',
+                              description='Start joy_teleop; the joystick node runs separately'),
         DeclareLaunchArgument('wind_speed', default_value='0.0',
                               description='Lake only: mean wind speed, m/s'),
         DeclareLaunchArgument('wind_direction', default_value='240',

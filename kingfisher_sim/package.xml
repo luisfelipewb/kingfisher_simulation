@@ -22,7 +22,13 @@
   <exec_depend>kingfisher_bringup</exec_depend>
   <exec_depend>kingfisher_twist</exec_depend>
   <exec_depend>kingfisher_viz</exec_depend>
-  <!-- sail_relay, anemometer_relay -->
+  <!-- sail_controller, and the stepper command it sends to sail_stepper_sim -->
+  <exec_depend>kingfisher_sail</exec_depend>
+  <!-- joy_teleop with kingfisher_teleop's config -->
+  <exec_depend>kingfisher_teleop</exec_depend>
+  <exec_depend>joy_teleop</exec_depend>
+  <exec_depend>phidgets_msgs</exec_depend>
+  <!-- anemometer_relay -->
   <exec_depend>topic_tools</exec_depend>
   <!-- wind_bridge -->
   <exec_depend>ros_gz_bridge</exec_depend>
