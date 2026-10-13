@@ -24,7 +24,9 @@
 #include <gz/sim/Model.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/transport/Node.hh>
+#include <sdf/Error.hh>
 #include <sdf/Frame.hh>
+#include <sdf/Link.hh>
 #include <sdf/Model.hh>
 
 #include "WindModel.hh"
@@ -94,6 +96,8 @@ class ApparentWindPrivate
   public: gz::sim::Link anemometerBody;
   /// \brief Anemometer frame in its body link's frame
   public: gz::math::Pose3d anemometerPose;
+  /// \brief Rotates a reading from the anemometer frame to the output frame
+  public: gz::math::Quaterniond outputRot;
   public: LowPass filter;
   public: gz::transport::Node::Publisher anemometerPub;
   public: std::string anemometerFrameId;
@@ -114,6 +118,18 @@ std::vector<double> ParseList(const std::string &_text, bool &_ok)
     values.push_back(v);
   _ok = in.eof();
   return values;
+}
+
+/// \brief Pose of a frame or link of the model in _body's frame
+sdf::Errors ResolveInBody(const sdf::Model &_model, const std::string &_name,
+                          const std::string &_body, gz::math::Pose3d &_pose)
+{
+  if (const auto *frame = _model.FrameByName(_name))
+    return frame->SemanticPose().Resolve(_pose, _body);
+  if (const auto *link = _model.LinkByName(_name))
+    return link->SemanticPose().Resolve(_pose, _body);
+  return {sdf::Error(sdf::ErrorCode::ELEMENT_MISSING,
+                     "no frame or link [" + _name + "]")};
 }
 
 Duration Period(double _rate)
@@ -216,15 +232,31 @@ bool ApparentWindPrivate::ConfigureAnemometer(
     return false;
   }
   this->anemometerBody.EnableVelocityChecks(_ecm);
+
+  // The reading is computed in the anemometer frame, then rotated into this
+  const auto outputName =
+    _sdf->Get<std::string>("output_frame", frameName).first;
+  gz::math::Pose3d outputPose;
+  errors = ResolveInBody(modelSdf->Data(), outputName, body, outputPose);
+  if (!errors.empty())
+  {
+    gzerr << "ApparentWind: cannot resolve output frame [" << outputName
+          << "]: " << errors.front().Message() << std::endl;
+    return false;
+  }
+  this->outputRot = outputPose.Rot().Inverse() * this->anemometerPose.Rot();
+
   this->filter = LowPass(_sdf->Get<double>("time_constant", 0.0).first);
-  this->anemometerFrameId = _sdf->Get<std::string>("frame_id", frameName).first;
+  this->anemometerFrameId =
+    _sdf->Get<std::string>("frame_id", outputName).first;
   this->anemometerThrottle.period =
     Period(_sdf->Get<double>("rate", 10.0).first);
   const auto topic =
     _sdf->Get<std::string>("topic", "sensors/anemometer/twist").first;
   this->anemometerPub = this->node.Advertise<gz::msgs::Twist>(topic);
   gzmsg << "ApparentWind: anemometer [" << frameName << "] at ["
-        << this->anemometerPose << "] from [" << body << "], publishing ["
+        << this->anemometerPose << "] from [" << body << "], output in ["
+        << outputName << "] at [" << outputPose << "], publishing ["
         << topic << "]" << std::endl;
   return true;
 }
@@ -321,7 +353,7 @@ void ApparentWind::PreUpdate(const gz::sim::UpdateInfo &_info,
       {
         gz::msgs::Twist msg;
         SetHeader(msg.mutable_header(), _info.simTime, d.anemometerFrameId);
-        gz::msgs::Set(msg.mutable_linear(), reading);
+        gz::msgs::Set(msg.mutable_linear(), d.outputRot.RotateVector(reading));
         d.anemometerPub.Publish(msg);
       }
     }

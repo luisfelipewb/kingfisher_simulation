@@ -44,13 +44,13 @@ Other VRX worlds keep the wind in their SDF, and their `USVWind` gives the Kingf
 `kingfisher_gazebo`'s `ApparentWind` system uses the apparent wind (true wind − the point's velocity) for:
 - the sail: NACA 0018 lift and drag at the `sail_link` origin. Sim only: `sail/wrench` (`WrenchStamped`,
   in `sail_link`);
-- the anemometer: `sensors/anemometer/wind` (`Vector3Stamped`, m/s, in `anemometer_link`: x forward,
-  y starboard, z always 0), pointing where the wind goes, low-passed with τ = 1 s. The boat's
-  anemometer driver publishes the same.
+- the anemometer: `sensors/anemometer/wind` (`Vector3Stamped`, m/s, in `base_link`: x forward, y port,
+  z always 0), pointing where the wind goes, at the boat sensor's 1.875 Hz. The boat's anemometer
+  driver publishes the same topic, unfiltered; the sim low-passes it with τ = 1 s, a placeholder.
 
 `robot.launch.py`'s `wind_bridge` brings both to ROS. `anemometer_relay` turns the bridged
 `sensors/anemometer/twist` (sim only) into `sensors/anemometer/wind`, since the bridge has no
-`Vector3Stamped`. The table, sail area and τ are properties in `kingfisher_gazebo_plugins.xacro`.
+`Vector3Stamped`. The table, sail area, τ and the rate are properties in `kingfisher_gazebo_plugins.xacro`.
 
 Spawn configs name it as `model_type: usv` + `urdf: package://kingfisher_gazebo/urdf/kingfisher_gazebo.urdf.xacro`
 (see `kingfisher_sim/config/kingfisher_spawn.yaml`).

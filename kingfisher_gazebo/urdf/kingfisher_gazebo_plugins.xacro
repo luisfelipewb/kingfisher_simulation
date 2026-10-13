@@ -169,6 +169,8 @@ thruster.
     1.225 1.085 0.925 0.755 0.575 0.42 0.32 0.23 0.14 0.055 0.025"/>
   <!-- s; first-order low-pass on the anemometer reading. Placeholder. -->
   <xacro:property name="kf_anemometer_tau" value="1.0"/>
+  <!-- Hz; the boat's Rowind 7, measured 2026-10-13 -->
+  <xacro:property name="kf_anemometer_rate" value="1.875"/>
 
   <!-- Apparent wind = vrx::USVWind's true wind - the point's velocity.
        Publishes sail/wrench (gz.msgs.Wrench) and sensors/anemometer/twist
@@ -193,10 +195,12 @@ thruster.
         </sail>
         <anemometer>
           <frame>anemometer_link</frame>
+          <!-- The reading is rotated into this, as the boat's driver does -->
+          <output_frame>base_link</output_frame>
           <time_constant>${kf_anemometer_tau}</time_constant>
           <topic>/${namespace}/sensors/anemometer/twist</topic>
-          <frame_id>${tf_prefix}anemometer_link</frame_id>
-          <rate>10</rate>
+          <frame_id>${tf_prefix}base_link</frame_id>
+          <rate>${kf_anemometer_rate}</rate>
         </anemometer>
       </plugin>
     </gazebo>
