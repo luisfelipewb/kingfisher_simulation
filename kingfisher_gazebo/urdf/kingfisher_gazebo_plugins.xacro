@@ -169,7 +169,7 @@ thruster.
     1.225 1.085 0.925 0.755 0.575 0.42 0.32 0.23 0.14 0.055 0.025"/>
   <!-- s; first-order low-pass on the anemometer reading. Placeholder. -->
   <xacro:property name="kf_anemometer_tau" value="1.0"/>
-  <!-- Hz; the boat's Rowind 7, measured 2026-10-13 -->
+  <!-- Hz; the boat's anemometer (LCJ CV7), measured 2026-10-13 -->
   <xacro:property name="kf_anemometer_rate" value="1.875"/>
 
   <!-- Apparent wind = vrx::USVWind's true wind - the point's velocity.
