@@ -26,9 +26,9 @@ position controller. `joy_teleop` runs with `kingfisher_teleop`'s config, as on 
 (`teleop:=False` to skip it); start the pad with `ros2 launch kingfisher_teleop joy.launch.py`. It also runs
 on its own, once per Kingfisher, after any world that spawns one (`name:=<model name>`).
 
-`ground_truth_tf` (default `True`) bridges the gz ground truth to `/tf` as `map → kingfisher/base_link`,
-so the boat shares one tree with the lake's geo frames (`launch_site`, …). It stands in for
-localization: set it to `False` once something publishes `map → odom`.
+Localization (`localization:=False` to skip it) matches the boat's `kingfisher_localization`: the gz
+ground truth is `odom` and `odom → kingfisher/base_link`, `map → odom` is the identity, and on the lake
+the site frames (`launch_site`, …) come from `kingfisher_localization`'s `geo_tf_publisher`.
 
 ## Wind
 

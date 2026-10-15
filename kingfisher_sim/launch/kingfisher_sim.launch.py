@@ -17,7 +17,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import EqualsSubstitution, LaunchConfiguration
+from launch.substitutions import EqualsSubstitution, LaunchConfiguration, PythonExpression
 
 
 def generate_launch_description():
@@ -65,7 +65,10 @@ def generate_launch_description():
                 get_package_share_directory('kingfisher_sim'), 'launch', 'robot.launch.py')),
             launch_arguments={
                 'name': name,
-                'ground_truth_tf': LaunchConfiguration('ground_truth_tf'),
+                'localization': LaunchConfiguration('localization'),
+                # The site frames only on the lake: other worlds have another origin
+                'site': PythonExpression(["'lac_symphonie' if '", world,
+                                          "' == 'lac_symphonie' else ''"]),
                 'teleop': LaunchConfiguration('teleop'),
             }.items()),
     ])
@@ -82,8 +85,9 @@ def generate_launch_description():
                               description='True to start the simulation paused'),
         DeclareLaunchArgument('extra_gz_args', default_value='',
                               description='Additional arguments passed to gz sim'),
-        DeclareLaunchArgument('ground_truth_tf', default_value='True',
-                              description='Publish the gz ground truth as map -> <name>/base_link'),
+        DeclareLaunchArgument('localization', default_value='True',
+                              description='Publish odom, map -> odom -> <name>/base_link '
+                                          'and, on the lake, the site frames'),
         DeclareLaunchArgument('teleop', default_value='True',
                               description='Start joy_teleop; the joystick node runs separately'),
         DeclareLaunchArgument('wind_speed', default_value='0.0',

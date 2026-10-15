@@ -30,6 +30,8 @@
   <exec_depend>phidgets_msgs</exec_depend>
   <!-- anemometer_relay -->
   <exec_depend>topic_tools</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>kingfisher_localization</exec_depend>
   <!-- wind_bridge -->
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>

@@ -30,7 +30,7 @@ pose publisher is deliberately not used.
   <xacro:arg name="gps_enabled" default="false"/>
   <xacro:arg name="imu_enabled" default="false"/>
   <xacro:arg name="lidar_enabled" default="false"/>
-  <!-- Ground truth odometry message on sensors/position/ground_truth_odometry (no TF) -->
+  <!-- Ground truth odometry on sensors/position/ground_truth_odometry, in odom -->
   <xacro:arg name="ground_truth_enabled" default="true"/>
 
   <xacro:property name="namespace" value="$(arg namespace)" scope="global"/>
@@ -59,18 +59,17 @@ pose publisher is deliberately not used.
   </gazebo>
 
   <!-- === Ground truth === -->
-  <!-- Pose/twist in the Gazebo world frame (which coincides with a map frame
-       whose origin is the world's spherical_coordinates origin). The transform
-       goes to its own topic: kingfisher_sim's ground_truth_tf bridges it to /tf
-       until a localization stack owns map -> odom -> base_link. -->
+  <!-- The sim's odom: pose in the Gazebo world frame, which is odom (map -> odom is
+       the identity, map at the world's spherical_coordinates origin), at 20 Hz, the
+       odom rate on the boat too. kingfisher_sim bridges the transform to /tf. -->
   <xacro:if value="$(arg ground_truth_enabled)">
     <gazebo>
       <plugin filename="gz-sim-odometry-publisher-system"
         name="gz::sim::systems::OdometryPublisher">
         <dimensions>3</dimensions>
-        <odom_frame>map</odom_frame>
+        <odom_frame>odom</odom_frame>
         <robot_base_frame>${tf_prefix}base_link</robot_base_frame>
-        <odom_publish_frequency>10</odom_publish_frequency>
+        <odom_publish_frequency>20</odom_publish_frequency>
         <tf_topic>/model/${namespace}/ground_truth/tf</tf_topic>
       </plugin>
     </gazebo>
