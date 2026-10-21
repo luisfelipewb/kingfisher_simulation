@@ -18,7 +18,7 @@ ros2 launch kingfisher_sim kingfisher_sim.launch.py world:=sydney_regatta  # any
 ```
 
 That is a world plus `robot.launch.py`, the sim twin of the boat's `kingfisher_bringup`
-`robot.launch.py`: `kingfisher_twist` and `kingfisher_viz` with the boat's config, and
+`robot.launch.py`: `kingfisher_twist`, `drive_mux` and `kingfisher_viz` with the boat's config, and
 `cmd_drive_translate` in place of the MCU. The sail takes `sail/cmd_position` (rad) and
 `sail/cmd_velocity` (rad/s) through `kingfisher_sail`'s `sail_controller`, as on the boat.
 `sail_stepper_sim` stands in for the stepper: it ramps like the real one and drives the sail's

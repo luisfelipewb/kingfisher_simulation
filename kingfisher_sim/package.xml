@@ -28,7 +28,7 @@
   <exec_depend>kingfisher_teleop</exec_depend>
   <exec_depend>joy_teleop</exec_depend>
   <exec_depend>phidgets_msgs</exec_depend>
-  <!-- anemometer_relay -->
+  <!-- anemometer_relay, drive_mux -->
   <exec_depend>topic_tools</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>kingfisher_localization</exec_depend>

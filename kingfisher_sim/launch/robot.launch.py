@@ -4,8 +4,8 @@
 
 """The Kingfisher's robot nodes in sim, the twin of kingfisher_bringup's robot.launch.py.
 
-kingfisher_twist, kingfisher_viz and kingfisher_sail's sail_controller run
-with the boat's config; cmd_drive_translate stands in for the MCU, and
+kingfisher_twist, drive_mux, kingfisher_viz and kingfisher_sail's sail_controller
+run with the boat's config; cmd_drive_translate stands in for the MCU, and
 sail_stepper_sim for the sail's stepper. wind_bridge and
 anemometer_relay expose ApparentWind's sail/wrench and sensors/anemometer/wind.
 The gz ground truth is the odom (the boat's RTK INS is close to it), with map -> odom
@@ -55,7 +55,18 @@ def generate_launch_description():
         name='kingfisher_twist',
         namespace=name,
         output='screen',
-        parameters=[boat_config, sim_time])
+        parameters=[boat_config, sim_time],
+        remappings=[('cmd_drive', 'teleop/cmd_drive')])
+
+    # teleop/cmd_drive (default) or control/cmd_drive -> cmd_drive, as on the boat
+    drive_mux = Node(
+        package='topic_tools',
+        executable='mux',
+        name='drive_mux',
+        namespace=name,
+        output='screen',
+        parameters=[sim_time],
+        arguments=['cmd_drive', 'teleop/cmd_drive', 'control/cmd_drive'])
 
     # The URDF frames, prefixed, as base.launch.py does on the boat
     viz = Node(
@@ -154,7 +165,7 @@ def generate_launch_description():
         parameters=[sim_time, {'site_file': site_file}],
         condition=has_site)
 
-    # joy -> cmd_vel, cmd_drive, sail commands; the joystick node
+    # joy -> cmd_vel, teleop/cmd_drive, drive_mux, sail commands; the joystick node
     # (kingfisher_teleop joy.launch.py) runs separately
     teleop = Node(
         package='joy_teleop',
@@ -178,6 +189,7 @@ def generate_launch_description():
                               description='Start joy_teleop; the joystick node runs separately'),
         cmd_drive,
         twist,
+        drive_mux,
         viz,
         sail_controller,
         sail_stepper,
